@@ -8,7 +8,7 @@ mongoose.set('strictQuery', true);
 const cors = require("cors");
 app.use(cors());
 
-// Start Google Drive and multer setup
+
 const stream = require("stream");
 const multer = require("multer");
 const path = require("path");
@@ -17,7 +17,7 @@ const upload = multer();
 
 app.use(express.urlencoded({ extended: true }));
 
-// MongoDB connection
+
 mongoose.connect(process.env.DB)
     .then(() => console.log("Connected to MongoDB"))
     .catch((err) => console.log("Cannot connect to MongoDB.", err));
@@ -41,7 +41,7 @@ mongoose.connect(process.env.DB)
     };
     
 
-// Google Drive authentication setup
+
 const KEYFILEPATH = path.join(__dirname, "cred.json");
 const SCOPES = ["https://www.googleapis.com/auth/drive"];
 
@@ -94,7 +94,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
         const { name, age, gender } = req.body;
         const file = req.file;
 
-        //upload
+        
         const fileUrl = await uploadFile(file);
 
     
