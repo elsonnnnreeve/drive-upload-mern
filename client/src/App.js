@@ -1,8 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import './App.css';
 import Axios from "axios";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+
+
 
 const App = () => {
+  const [listOfUsers, setListOfUsers] = useState([]);
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
@@ -11,6 +16,13 @@ const App = () => {
   const [buttonColor, setButtonColor] = useState("");
   const [file, setFile] = useState(null);
   const [previewLink, setPreviewLink] = useState("");
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    Axios.get("http://192.168.5.67:3000/getUsers").then((response) => {
+      setListOfUsers(response.data);
+    });
+  }, []);
 
   const handleFileChange = (event) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -32,15 +44,23 @@ const App = () => {
     formData.append('file', file);
 
     try {
-      
-      const response = await Axios.post('http://localhost:3001/upload', formData, {
+      const response = await Axios.post('http://192.168.5.67:3000/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      const url = response.data.fileUrl; 
+      const url = response.data.id;
       setPreviewLink(url);
+      setListOfUsers([
+        ...listOfUsers,
+        {
+          name,
+          age,
+          gender,
+          id: url,
+        },
+      ]);
 
       setMessage('Successfully uploaded to drive and saved in backend');
       setButtonColor('green');
@@ -49,33 +69,94 @@ const App = () => {
       setGender("");
       setFileName("Select Files");
       setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = null;
+      }
 
       setTimeout(() => {
         setMessage('');
         setButtonColor('');
-        setPreviewLink('');
       }, 5000);
     } catch (err) {
-      setMessage('Not uploaded to drive or backend');
-      console.log("Couldn't upload to drive or backend", err);
+      if (err.message === "Error uploading file to Drive: Insufficient storage quota on Google Drive. Unable to upload file.") {
+        setMessage("File size exceeds storage limit. Please upload a smaller file.")
+        console.log("File size exceeds storage limit. Please upload a smaller file.", err.response);
+      } else {
+        setMessage('Not uploaded to drive or backend');
+        console.log("Couldn't upload to drive or backend", err);
+      }
+      setTimeout(() => {
+        setMessage('');
+        setButtonColor('');
+      }, 5000);
     }
   };
 
   return (
-    <div className="App">
-      <div>
-        <h2>Enter Student details:</h2><br />
-        <p>{message}</p>
+    <div className="body">
+      {message && (
+        <div className="position-absolute top-80 start-50 translate-middle-x">
+          <div className={`alert ${buttonColor === "green" ? "alert-success" : "alert-danger"} text-center`}>
+            {message}
+          </div>
+        </div>
+      )}
+      <br /><br />
+
+      <div className="container-sm p-3 my-5 mx-auto border text-center row w-25 rounded custom-layout">
+        <h2 className="h2">Enter Student details:</h2><br /><br/><br/><br/>
         <form onSubmit={handleSubmit}>
-          <input type="text" placeholder="Name.." value={name} onChange={(event) => setName(event.target.value)} /><br/>
-          <input type="number" placeholder="Age.." value={age} onChange={(event) => setAge(event.target.value)} /><br/>
-          <input type="text" placeholder="Gender.." value={gender} onChange={(event) => setGender(event.target.value)} /><br/>
-          <input type="file" id="fileInput" onChange={handleFileChange} /><br/>
-          <label htmlFor="fileInput">{fileName}</label><br/>
-          {previewLink && <p><a href={previewLink} target="_blank" rel="noopener noreferrer">Preview Link</a></p>}
-          <button type="submit" id="myButton" style={{ backgroundColor: buttonColor }}>Submit</button>
+          <input className="col form-control form-control-sm" type="text" placeholder="Name.." value={name} onChange={(event) => setName(event.target.value)} /><br /><br />
+          <input className="col form-control form-control-sm" type="number" placeholder="Age.." value={age} onChange={(event) => setAge(event.target.value)} /><br /><br />
+          <select className="col form-select form-select-sm" value={gender} onChange={(event) => setGender(event.target.value)}>
+            <option value="">Select Gender..</option>
+            <option value="m">Male</option>
+            <option value="f">Female</option>
+            <option value="o">Other</option>
+          </select><br /><br />
+          <input className="col text-center form-control form-control-sm" type="file" id="fileInput" onChange={handleFileChange} ref={fileInputRef} multiple /><br />
+          <label className="col" hidden htmlFor="fileInput">{fileName}</label>
+          <span className={`alert ${buttonColor === "red" ? " spinner-grow text-primary spinner-grow-sm" : ""} `}></span><br/>
+          <button className="btn btn-outline-primary btn-sm" type="submit" id="myButton" style={{ backgroundColor: buttonColor }}>
+            
+            Submit</button>
+        
         </form>
       </div>
+      {/* <div className={`alert ${buttonColor === "green" ? "alert-success" : "alert-danger"} text-center`}>*/ }
+
+      <span className="text-center">
+        {previewLink && <p><a href={previewLink} className="btn btn-info btn-sm" target="_blank" rel="noopener noreferrer">Preview of the recently uploaded file</a></p>}
+        <br /><br />
+      </span>
+      
+      <div className="d-flex justify-content-center mt-4 ">
+      <button type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#demo">STUDENTS</button>
+      <span id="demo" className="collapse">
+        <table className="table table-responsive-sm table-bordered text-center table-sm table-hover table-striped table-container ">
+          <thead className="thead-light">
+            <tr>
+              <th>Name</th>
+              <th>Age</th>
+              <th>Gender</th>
+              <th>URL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {listOfUsers.map((user, index) => (
+              <tr key={index}>
+                <td>{user.name}</td>
+                <td>{user.age}</td>
+                <td>{user.gender}</td>
+                <td><a href={user.id} rel="noopener noreferrer" target="_blank">{user.id}</a></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </span>
+      </div>
+
+
     </div>
   );
 }
