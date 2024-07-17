@@ -19,7 +19,7 @@ const App = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    Axios.get("http://192.168.5.67:3000/getUsers").then((response) => {
+    Axios.get("https://google-drive-upload-backend.vercel.app/getUsers").then((response) => {
       setListOfUsers(response.data);
     });
   }, []);
@@ -44,7 +44,7 @@ const App = () => {
     formData.append('file', file);
 
     try {
-      const response = await Axios.post('http://192.168.5.67:3000/upload', formData, {
+      const response = await Axios.post('https://google-drive-upload-backend.vercel.app/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
