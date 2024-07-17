@@ -6,7 +6,11 @@ app.use(express.json());
 const mongoose = require("mongoose");
 mongoose.set('strictQuery', true);
 const cors = require("cors");
-app.use(cors());
+app.use(cors({
+ origin:["https://deploy-mern1whq.vercel.app"],
+    methods:["POST","GET"],
+    credentials:true
+}));
 
 const stream = require("stream");
 const multer = require("multer");
