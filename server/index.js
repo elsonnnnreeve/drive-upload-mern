@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 mongoose.set('strictQuery', true);
 const cors = require("cors");
 app.use(cors({
- origin:["https://google-drive-upload-frontend.vercel.app/"],
+ origin:["https://google-drive-upload-frontend.vercel.app"],
     methods:["POST","GET"],
     credentials:true
 }));
