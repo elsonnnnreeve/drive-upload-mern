@@ -3,7 +3,7 @@ import './App.css';
 import Axios from "axios";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-axios.default.withCredentials=true;
+Axios.default.withCredentials=true;
 
 
 
