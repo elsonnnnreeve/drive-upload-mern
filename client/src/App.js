@@ -3,9 +3,6 @@ import './App.css';
 import Axios from "axios";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-Axios.default.withCredentials=true;
-
-
 
 const App = () => {
   const [listOfUsers, setListOfUsers] = useState([]);
@@ -20,7 +17,7 @@ const App = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    Axios.get("https://google-drive-upload-backend.vercel.app/getUsers").then((response) => {
+    Axios.get("http://localhost:3001/getUsers").then((response) => {
       setListOfUsers(response.data);
     });
   }, []);
@@ -45,7 +42,7 @@ const App = () => {
     formData.append('file', file);
 
     try {
-      const response = await Axios.post('https://google-drive-upload-backend.vercel.app/upload', formData, {
+      const response = await Axios.post('http://localhost:3001/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -124,7 +121,6 @@ const App = () => {
         
         </form>
       </div>
-      {/* <div className={`alert ${buttonColor === "green" ? "alert-success" : "alert-danger"} text-center`}>*/ }
 
       <span className="text-center">
         {previewLink && <p><a href={previewLink} className="btn btn-info btn-sm" target="_blank" rel="noopener noreferrer">Preview of the recently uploaded file</a></p>}

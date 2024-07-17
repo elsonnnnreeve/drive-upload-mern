@@ -6,11 +6,7 @@ app.use(express.json());
 const mongoose = require("mongoose");
 mongoose.set('strictQuery', true);
 const cors = require("cors");
-app.use(cors({
- origin:["https://deploy-mern1whq.vercel.app"],
-    methods:["POST","GET"],
-    credentials:true
-}));
+app.use(cors());
 
 const stream = require("stream");
 const multer = require("multer");
@@ -123,6 +119,6 @@ app.get("/getUsers",(req,res)=>{
     })
 })
 
-app.listen(process.env.PORT,'0.0.0.0', () => {//by default only localhost so change it.
+app.listen(process.env.PORT, () => {//by default only localhost so change it.
     console.log(`Listening on port ${process.env.PORT}...`);
 });
