@@ -11,5 +11,8 @@
       "src": "/api/(.*)",
       "dest": "backend/api/index.js"
     }
-  ]
+  ],
+  "env": {
+    "NODE_OPTIONS": "--openssl-legacy-provider"
+  }
 }
