@@ -2,38 +2,51 @@ require('dotenv').config();
 const express = require("express");
 const app = express();
 const UserModel = require("./models/Users");
-app.use(express.json());
 const mongoose = require("mongoose");
-mongoose.set('strictQuery', true);
 const cors = require("cors");
-app.use(cors());
-
 const stream = require("stream");
 const multer = require("multer");
 const path = require("path");
 const { google } = require("googleapis");
-const upload = multer();
+const rateLimit = require("express-rate-limit"); // Import express-rate-limit
 
+app.use(express.json());
+app.use(cors(
+    {
+        origin: ["https://drive-upload-client.vercel.app"],
+        methods: ["POST", "GET"],
+        credentials: true
+    }
+));
 app.use(express.urlencoded({ extended: true }));
 
 mongoose.connect(process.env.DB)
     .then(() => console.log("Connected to MongoDB"))
     .catch((err) => console.log("Cannot connect to MongoDB.", err));
 
+mongoose.set('strictQuery', true);
+
 const KEYFILEPATH = path.join(__dirname, "cred1.json");
 const SCOPES = ["https://www.googleapis.com/auth/drive"];
+const auth = new google.auth.GoogleAuth({
+    keyFile: KEYFILEPATH,
+    scopes: SCOPES,
+});
+const drive = google.drive({ version: "v3", auth });
+const upload = multer();
+
+//rate limiting middleware
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, //limit each IP to 100 requests per windowMs
+    message: "Too many requests from this IP, please try again after 15 minutes"
+});
+
+app.use(apiLimiter);
 
 const getDriveStorageInfo = async () => {
-    const auth = new google.auth.GoogleAuth({
-        keyFile: KEYFILEPATH,
-        scopes: SCOPES,
-    });
-    const drive = google.drive({ version: "v3", auth });
-
     try {
-        const response = await drive.about.get({
-            fields: "storageQuota",
-        });
+        const response = await drive.about.get({ fields: "storageQuota" });
         return response.data.storageQuota;
     } catch (error) {
         console.error("Error fetching Drive storage information:", error.message);
@@ -41,12 +54,6 @@ const getDriveStorageInfo = async () => {
     }
 };
 
-const auth = new google.auth.GoogleAuth({
-    keyFile: KEYFILEPATH,
-    scopes: SCOPES,
-});
-
-const drive = google.drive({ version: "v3", auth });
 
 const uploadFile = async (fileObject) => {
     const bufferStream = new stream.PassThrough();
@@ -54,23 +61,17 @@ const uploadFile = async (fileObject) => {
 
     try {
         const storageInfo = await getDriveStorageInfo();
-        const { limit,usageInDrive,usageInDriveTrash,usage } = storageInfo;
-//limit gives total available storage and usage gives used storage.
+        const { limit, usage } = storageInfo;
         const limitBytes = parseInt(limit, 10);
         const usageBytes = parseInt(usage, 10);
-
         const remainingSpace = limitBytes - usageBytes;
-
-        console.log("Remaining storage (bytes):", remainingSpace);
-        console.log("Limit (bytes):", limitBytes);
-        console.log("Usage (bytes):", usageBytes);
-        console.log("usageInDriveTrash",usageInDriveTrash);
-        console.log("usageInDrive:", usageInDrive);
-        console.log("File size (bytes):", fileObject.size);
+        console.log("remaining space:",remainingSpace);
+        console.log("limit:",limit);
+        console.log("usage:",usage);
+        console.log("File",fileObject.size);
 
         if (fileObject.size > remainingSpace) {
-           throw new Error("Insufficient storage quota on Google Drive. Unable to upload file.");
-           
+            throw new Error("Insufficient storage quota on Google Drive. Unable to upload file.");
         }
 
         const { data } = await drive.files.create({
@@ -80,12 +81,11 @@ const uploadFile = async (fileObject) => {
             },
             requestBody: {
                 name: fileObject.originalname,
-                parents: ["1DVAE4fQ8_u5MC6Du2kmoSrl3oy_GZzlD"], // the folder link id
+                parents: ["1DVAE4fQ8_u5MC6Du2kmoSrl3oy_GZzlD"], // Folder ID
             },
             fields: "id, name",
         });
         const fileUrl = `https://drive.google.com/file/d/${data.id}/view?usp=sharing`;
-        console.log(`Uploaded file ${data.name} (${data.id}). URL: ${fileUrl}`);
         return fileUrl;
     } catch (error) {
         console.error("Error uploading file to Drive:", error.message);
@@ -93,11 +93,11 @@ const uploadFile = async (fileObject) => {
     }
 };
 
+//file upload endpoint
 app.post("/upload", upload.single('file'), async (req, res) => {
     try {
         const { name, age, gender } = req.body;
         const file = req.file;
-
         const fileUrl = await uploadFile(file);
 
         const newUser = new UserModel({ name, age, gender, id: fileUrl });
@@ -109,16 +109,30 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     }
 });
 
-app.get("/getUsers",(req,res)=>{
-    UserModel.find({},(err,result)=>{
-        if(err){
+//get users endpoint
+app.get("/getUsers", (req, res) => {
+    UserModel.find({}, (err, result) => {
+        if (err) {
             res.json(err);
-        }else{
+        } else {
             res.json(result);
         }
-    })
-})
+    });
+});
 
-app.listen(process.env.PORT, () => {//by default only localhost so change it.
-    console.log(`Listening on port ${process.env.PORT}...`);
+//error handling for unhandled routes
+app.use((req, res, next) => {
+    res.status(404).json({ error: "Not found" });
+});
+
+//error handler middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: "Internal server error" });
+});
+
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });

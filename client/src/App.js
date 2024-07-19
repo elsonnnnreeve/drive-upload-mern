@@ -17,7 +17,7 @@ const App = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    Axios.get("http://localhost:3001/getUsers").then((response) => {
+    Axios.get("https://drive-upload-server.vercel.app/getUsers").then((response) => {
       setListOfUsers(response.data);
     });
   }, []);
@@ -42,7 +42,7 @@ const App = () => {
     formData.append('file', file);
 
     try {
-      const response = await Axios.post('http://localhost:3001/upload', formData, {
+      const response = await Axios.post('https://drive-upload-server.vercel.app/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
