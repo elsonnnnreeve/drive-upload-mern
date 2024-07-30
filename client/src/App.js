@@ -9,7 +9,7 @@ const App = () => {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
-  const [fileName, setFileName] = useState("Select Files");
+  const [fileName, setFileName] = useState("Upload ID card");
   const [message, setMessage] = useState("");
   const [buttonColor, setButtonColor] = useState("");
   const [file, setFile] = useState(null);
@@ -17,7 +17,7 @@ const App = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    Axios.get("http://localhost:3001/getUsers").then((response) => {
+    Axios.get("https://drive-upload-backend.vercel.app/api/getUsers").then((response) => {
       setListOfUsers(response.data);
     });
   }, []);
@@ -26,9 +26,9 @@ const App = () => {
     if (event.target.files && event.target.files.length > 0) {
       const file = event.target.files[0];
       setFile(file);
-      setFileName(file.name);
+      setFileName('Upload ID card');
     } else {
-      setFileName('Select Files');
+      setFileName('Upload ID card');
     }
   };
 
@@ -42,10 +42,10 @@ const App = () => {
     formData.append('file', file);
 
     try {
-      const response = await Axios.post('http://localhost:3001/upload', formData, {
+      const response = await Axios.post('https://drive-upload-backend.vercel.app/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-        },
+        }
       });
 
       const url = response.data.id;
@@ -65,7 +65,7 @@ const App = () => {
       setName("");
       setAge("");
       setGender("");
-      setFileName("Select Files");
+      setFileName("Upload ID card");
       setFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = null;
@@ -111,14 +111,13 @@ const App = () => {
             <option value="m">Male</option>
             <option value="f">Female</option>
             <option value="o">Other</option>
-          </select><br /><br />
+          </select><br />
+          <label className="col" hidden={true} htmlFor="fileInput">{fileName}</label><br/>
           <input className="col text-center form-control form-control-sm" type="file" id="fileInput" onChange={handleFileChange} ref={fileInputRef} multiple /><br />
-          <label className="col" hidden htmlFor="fileInput">{fileName}</label>
-          <span className={`alert ${buttonColor === "red" ? " spinner-grow text-primary spinner-grow-sm" : ""} `}></span><br/>
+          <span className={`alert ${buttonColor === "red" ? " spinner-grow text-primary spinner-grow-sm" : ""}`} ></span><br/>
           <button className="btn btn-outline-primary btn-sm" type="submit" id="myButton" style={{ backgroundColor: buttonColor }}>
-            
-            Submit</button>
-        
+            Submit
+          </button>
         </form>
       </div>
 
@@ -127,33 +126,31 @@ const App = () => {
         <br /><br />
       </span>
       
-      <div className="d-flex justify-content-center mt-4 ">
-      <button type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#demo">STUDENTS</button>
-      <span id="demo" className="collapse">
-        <table className="table table-responsive-sm table-bordered text-center table-sm table-hover table-striped table-container ">
-          <thead className="thead-light">
-            <tr>
-              <th>Name</th>
-              <th>Age</th>
-              <th>Gender</th>
-              <th>URL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {listOfUsers.map((user, index) => (
-              <tr key={index}>
-                <td>{user.name}</td>
-                <td>{user.age}</td>
-                <td>{user.gender}</td>
-                <td><a href={user.id} rel="noopener noreferrer" target="_blank">{user.id}</a></td>
+      <div className="d-flex justify-content-center mt-4">
+        <button type="button" className="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#demo">STUDENTS</button>
+        <span id="demo" className="collapse">
+          <table className="table table-responsive-sm table-bordered text-center table-sm table-hover table-striped table-container">
+            <thead className="thead-light">
+              <tr>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Gender</th>
+              
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {listOfUsers.map((user, index) => (
+                <tr key={index}>
+                  <td>{user.name}</td>
+                  <td>{user.age}</td>
+                  <td>{user.gender}</td>
+                  
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </span>
       </div>
-
-
     </div>
   );
 }
