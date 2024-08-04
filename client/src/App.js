@@ -11,6 +11,7 @@ const App = () => {
   const [gender, setGender] = useState("");
   const [fileName, setFileName] = useState("Upload ID card");
   const [message, setMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState(""); // State for throttle error message
   const [buttonColor, setButtonColor] = useState("");
   const [file, setFile] = useState(null);
   const [previewLink, setPreviewLink] = useState("");
@@ -26,9 +27,9 @@ const App = () => {
     if (event.target.files && event.target.files.length > 0) {
       const file = event.target.files[0];
       setFile(file);
-      setFileName(file.name);
+      setFileName('Upload ID card');
     } else {
-      setFileName("Upload ID card");
+      setFileName('Upload ID card');
     }
   };
 
@@ -73,18 +74,21 @@ const App = () => {
 
       setTimeout(() => {
         setMessage('');
+        setErrorMessage(''); // Clear error message after a timeout
         setButtonColor('');
       }, 5000);
     } catch (err) {
-      if (err.message.includes("Insufficient storage quota")) {
-        setMessage("File size exceeds storage limit. Please upload a smaller file.");
-        console.log("File size exceeds storage limit. Please upload a smaller file.", err.response);
+      if (err.message.includes("Insufficient storage quota") || err.message.includes("Rate limit exceeded")) {
+        setErrorMessage("Google Drive API has throttled the request. Please try again later.");
+        setMessage(""); // Clear success message if error occurs
+        console.log("Google Drive API throttling or storage limit issue", err);
       } else {
         setMessage('Not uploaded to drive or backend');
         console.log("Couldn't upload to drive or backend", err);
       }
       setTimeout(() => {
         setMessage('');
+        setErrorMessage(''); // Clear error message after a timeout
         setButtonColor('');
       }, 5000);
     }
@@ -96,6 +100,13 @@ const App = () => {
         <div className="position-absolute top-80 start-50 translate-middle-x">
           <div className={`alert ${buttonColor === "green" ? "alert-success" : "alert-danger"} text-center`}>
             {message}
+          </div>
+        </div>
+      )}
+      {errorMessage && (
+        <div className="position-absolute top-80 start-50 translate-middle-x">
+          <div className="alert alert-warning text-center">
+            {errorMessage}
           </div>
         </div>
       )}
@@ -113,7 +124,7 @@ const App = () => {
             <option value="o">Other</option>
           </select><br />
           <label className="col" hidden={true} htmlFor="fileInput">{fileName}</label><br/>
-          <input className="col text-center form-control form-control-sm" type="file" id="fileInput" onChange={handleFileChange} ref={fileInputRef} /><br />
+          <input className="col text-center form-control form-control-sm" type="file" id="fileInput" onChange={handleFileChange} ref={fileInputRef} multiple /><br />
           <span className={`alert ${buttonColor === "red" ? " spinner-grow text-primary spinner-grow-sm" : ""}`} ></span><br/>
           <button className="btn btn-outline-primary btn-sm" type="submit" id="myButton" style={{ backgroundColor: buttonColor }}>
             Submit
@@ -135,6 +146,7 @@ const App = () => {
                 <th>Name</th>
                 <th>Age</th>
                 <th>Gender</th>
+              
               </tr>
             </thead>
             <tbody>
@@ -143,6 +155,7 @@ const App = () => {
                   <td>{user.name}</td>
                   <td>{user.age}</td>
                   <td>{user.gender}</td>
+                  
                 </tr>
               ))}
             </tbody>
