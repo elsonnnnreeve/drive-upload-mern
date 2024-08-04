@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -10,10 +11,8 @@ const cron = require('node-cron');
 const router = express.Router();
 const upload = multer();
 
-// CORS configuration
 router.use(cors());
 
-// Drive API setup
 const KEYFILEPATH = path.join(__dirname, "../cred1.json");
 const SCOPES = ["https://www.googleapis.com/auth/drive"];
 const auth = new google.auth.GoogleAuth({
@@ -22,7 +21,6 @@ const auth = new google.auth.GoogleAuth({
 });
 const drive = google.drive({ version: "v3", auth });
 
-// Function to get Drive storage info
 const getDriveStorageInfo = async () => {
     try {
         const response = await drive.about.get({ fields: "storageQuota" });
@@ -33,7 +31,6 @@ const getDriveStorageInfo = async () => {
     }
 };
 
-// Function to upload file to Drive
 const uploadFile = async (fileObject, isTemporary = false) => {
     const bufferStream = new stream.PassThrough();
     bufferStream.end(fileObject.buffer);
@@ -50,7 +47,6 @@ const uploadFile = async (fileObject, isTemporary = false) => {
             if (isTemporary) {
                 throw new Error("Insufficient storage quota on Google Drive. Unable to upload file.");
             } else {
-                // Save to temporary folder
                 const { data } = await drive.files.create({
                     media: {
                         mimeType: fileObject.mimetype,
@@ -58,7 +54,7 @@ const uploadFile = async (fileObject, isTemporary = false) => {
                     },
                     requestBody: {
                         name: fileObject.originalname,
-                        parents: ["1ahLM_1CVwOXYujYcXOWW606Te2Kuz7Sf"], // Replace with your temporary folder ID
+                        parents: [process.env.TEMP], //temp folder
                     },
                     fields: "id, name",
                 });
@@ -67,7 +63,7 @@ const uploadFile = async (fileObject, isTemporary = false) => {
             }
         }
 
-        // Upload to the original folder
+     
         const { data } = await drive.files.create({
             media: {
                 mimeType: fileObject.mimetype,
@@ -75,7 +71,7 @@ const uploadFile = async (fileObject, isTemporary = false) => {
             },
             requestBody: {
                 name: fileObject.originalname,
-                parents: ["1DVAE4fQ8_u5MC6Du2kmoSrl3oy_GZzlD"], // Replace with your original folder ID
+                parents: [process.env.OG], //original folder
             },
             fields: "id, name",
         });
@@ -98,29 +94,31 @@ const uploadFile = async (fileObject, isTemporary = false) => {
     }
 };
 
-// Function to move files from temporary to original folder
+
 const moveFilesFromTempToOriginal = async () => {
     try {
-        // List files in the temporary folder
+       
+        const folderId = process.env.TEMP; 
         const response = await drive.files.list({
-            q: `'TEMPORARY_FOLDER_ID' in parents`,
+            q: `'${folderId}' in parents`, 
             fields: 'files(id, name)',
         });
+        
 
         const files = response.data.files;
 
         for (const file of files) {
-            // Move file to original folder
+            
             await drive.files.update({
                 fileId: file.id,
-                addParents: 'ORIGINAL_FOLDER_ID',
-                removeParents: 'TEMPORARY_FOLDER_ID',
+                addParents: process.env.OG,
+                removeParents: process.env.TEMP,
             });
 
-            // Update file URL in the backend
+            
             const fileUrl = `https://drive.google.com/file/d/${file.id}/view?usp=sharing`;
             await UserModel.updateOne(
-                { id: `https://drive.google.com/file/d/${file.id}/view?usp=sharing` }, // Temporary URL
+                { id: `https://drive.google.com/file/d/${file.id}/view?usp=sharing` }, //temp url
                 { $set: { id: fileUrl } }
             );
         }
@@ -129,13 +127,13 @@ const moveFilesFromTempToOriginal = async () => {
     }
 };
 
-// Cron job to run at 2 AM daily
+//cron job at 2 am
 cron.schedule('0 2 * * *', () => {
     console.log('Running cron job to move files from temporary to original folder.');
     moveFilesFromTempToOriginal();
 });
 
-// File upload endpoint
+
 router.post("/upload", upload.single('file'), async (req, res) => {
     try {
         const { name, age, gender } = req.body;
