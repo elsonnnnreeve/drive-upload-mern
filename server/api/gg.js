@@ -5,9 +5,7 @@ const UserModel = require("../models/Users");
 const router = express.Router();
 
 // CORS configuration
-router.use(cors({
-    origin: "https://drive-upload-frontend.vercel.app" // Update with your frontend URL
-}));
+router.use(cors());
 
 // Get users endpoint
 router.get("/getUsers", (req, res) => {

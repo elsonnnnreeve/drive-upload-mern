@@ -10,13 +10,7 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors({
-    origin: "https://drive-upload-frontend.vercel.app",
-    credentials: true
-}));
-
-// Trust proxy setting for rate limiting
-app.set('trust proxy', 1);
+app.use(cors());
 
 // Rate limiting middleware
 const apiLimiter = rateLimit({

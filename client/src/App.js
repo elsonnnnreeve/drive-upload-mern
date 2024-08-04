@@ -17,7 +17,7 @@ const App = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    Axios.get("https://drive-upload-backend.vercel.app/api/getUsers").then((response) => {
+    Axios.get("http://localhost:3001/api/getUsers").then((response) => {
       setListOfUsers(response.data);
     });
   }, []);
@@ -26,9 +26,9 @@ const App = () => {
     if (event.target.files && event.target.files.length > 0) {
       const file = event.target.files[0];
       setFile(file);
-      setFileName('Upload ID card');
+      setFileName(file.name);
     } else {
-      setFileName('Upload ID card');
+      setFileName("Upload ID card");
     }
   };
 
@@ -42,7 +42,7 @@ const App = () => {
     formData.append('file', file);
 
     try {
-      const response = await Axios.post('https://drive-upload-backend.vercel.app/api/upload', formData, {
+      const response = await Axios.post('http://localhost:3001/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         }
@@ -76,8 +76,8 @@ const App = () => {
         setButtonColor('');
       }, 5000);
     } catch (err) {
-      if (err.message === "Error uploading file to Drive: Insufficient storage quota on Google Drive. Unable to upload file.") {
-        setMessage("File size exceeds storage limit. Please upload a smaller file.")
+      if (err.message.includes("Insufficient storage quota")) {
+        setMessage("File size exceeds storage limit. Please upload a smaller file.");
         console.log("File size exceeds storage limit. Please upload a smaller file.", err.response);
       } else {
         setMessage('Not uploaded to drive or backend');
@@ -113,7 +113,7 @@ const App = () => {
             <option value="o">Other</option>
           </select><br />
           <label className="col" hidden={true} htmlFor="fileInput">{fileName}</label><br/>
-          <input className="col text-center form-control form-control-sm" type="file" id="fileInput" onChange={handleFileChange} ref={fileInputRef} multiple /><br />
+          <input className="col text-center form-control form-control-sm" type="file" id="fileInput" onChange={handleFileChange} ref={fileInputRef} /><br />
           <span className={`alert ${buttonColor === "red" ? " spinner-grow text-primary spinner-grow-sm" : ""}`} ></span><br/>
           <button className="btn btn-outline-primary btn-sm" type="submit" id="myButton" style={{ backgroundColor: buttonColor }}>
             Submit
@@ -135,7 +135,6 @@ const App = () => {
                 <th>Name</th>
                 <th>Age</th>
                 <th>Gender</th>
-              
               </tr>
             </thead>
             <tbody>
@@ -144,7 +143,6 @@ const App = () => {
                   <td>{user.name}</td>
                   <td>{user.age}</td>
                   <td>{user.gender}</td>
-                  
                 </tr>
               ))}
             </tbody>
